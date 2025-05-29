@@ -1,37 +1,57 @@
 pipeline {
-  agent any
+    agent any
 
-  tools {
-    maven 'maven3.9.9'      // Must match name in Jenkins
-    jdk 'JDK_17'         // Must match name in Jenkins
-  }
-
-  environment {
-    JAVA_HOME = "${tool 'JDK_17'}"
-    PATH = "${JAVA_HOME}/bin:${env.PATH}"
-  }
-
-  stages {
-    stage('Checkout Code') {
-      steps {
-        git branch: 'main', url: 'https://github.com/shivani-snaatak/salary-api.git'
-      }
+    tools {
+        maven 'maven3.9.9'       // Must match name in Jenkins
+        jdk 'JDK_17'             // Must match name in Jenkins
     }
 
-    stage('Compile Java Code') {
-      steps {
-        echo "⚙️ Compiling Java code..."
-        sh 'mvn clean compile'
-      }
+    environment {
+        SLACK_CHANNEL = 'notificationn-channel'
+        SLACK_CREDENTIAL_ID = 'downtime-crew'
+        JAVA_HOME = "${tool 'JDK_17'}"
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
-  }
 
-  post {
-    success {
-      echo "✅ Compilation successful!"
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/shivani-snaatak/salary-api.git'
+            }
+        }
+
+        stage('Compile Java Code') {
+            steps {
+                echo "⚙️ Compiling Java code..."
+                sh 'mvn clean compile'
+            }
+        }
     }
-    failure {
-      echo "❌ Compilation failed!"
+
+    post {
+        success {
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'good',
+                message: """\
+✅ *Compilation successful!*
+• Repository: ${env.GIT_URL}
+• Job URL: ${env.BUILD_URL}
+""",
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
+        }
+        failure {
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'danger',
+                message: """\
+❌ *Compilation failed!*
+• Repository: ${env.GIT_URL}
+• Job URL: ${env.BUILD_URL}
+""",
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
+        }
     }
-  }
 }
