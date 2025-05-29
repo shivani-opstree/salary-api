@@ -7,6 +7,8 @@ pipeline {
   }
 
   environment {
+    SLACK_CHANNEL = 'notificationn-channel'
+    SLACK_CREDENTIAL_ID = 'downtime-crew'
     JAVA_HOME = "${tool 'JDK_17'}"
     PATH = "${JAVA_HOME}/bin:${env.PATH}"
   }
@@ -25,13 +27,30 @@ pipeline {
       }
     }
   }
-
-  post {
-    success {
-      echo "✅ Compilation successful!"
+    post {
+        success {
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'good',
+                message: """\
+                          ✅ *Compilation successful!*
+                          • Repository: ${env.GIT_URL}
+                          • Job URL: ${env.BUILD_URL}
+                          """,
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
+        }
+        failure {
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                color: 'danger',
+                message: """\
+                          ❌ *Compilation failed!*
+                          • Repository: ${env.GIT_URL}
+                          • Job URL: ${env.BUILD_URL}
+                          """,
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
+        }
     }
-    failure {
-      echo "❌ Compilation failed!"
-    }
-  }
 }
